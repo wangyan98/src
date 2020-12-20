@@ -5,11 +5,11 @@ name: automatic build of apk
 # Controls when the action will run. Triggers the workflow on push or pull request events
 on:
   workflow_dispatch:
-#   push:
-#     paths-ignore:
-#       - '*.md'
-#       - '*.yml'
-#     branches: [ master ]
+  push:
+    paths-ignore:
+      - '*.md'
+      - '*.yml'
+    branches: [ master ]
   pull_request:
     paths-ignore:
       - '*.md'
@@ -113,17 +113,17 @@ jobs:
         if: matrix.platform == 'arm'
         run: sed -i "s#android_default_version_code = \"1\"#android_default_version_code = \"$(date '+%y%m%d')1\"#" secondary_disk/out/android_${{ matrix.platform }}/args.gn
 
-      - name: Modifying args.gn (arm64)
-        if: matrix.platform == 'arm64'
-        run: sed -i "s#android_default_version_code = \"1\"#android_default_version_code = \"$(date '+%y%m%d')2\"#" secondary_disk/out/android_${{ matrix.platform }}/args.gn
+#       - name: Modifying args.gn (arm64)
+#         if: matrix.platform == 'arm64'
+#         run: sed -i "s#android_default_version_code = \"1\"#android_default_version_code = \"$(date '+%y%m%d')2\"#" secondary_disk/out/android_${{ matrix.platform }}/args.gn
 
-      - name: Modifying args.gn (x86)
-        if: matrix.platform == 'x86'
-        run: sed -i "s#android_default_version_code = \"1\"#android_default_version_code = \"$(date '+%y%m%d')3\"#" secondary_disk/out/android_${{ matrix.platform }}/args.gn
+#       - name: Modifying args.gn (x86)
+#         if: matrix.platform == 'x86'
+#         run: sed -i "s#android_default_version_code = \"1\"#android_default_version_code = \"$(date '+%y%m%d')3\"#" secondary_disk/out/android_${{ matrix.platform }}/args.gn
 
-      - name: Modifying args.gn (x64)
-        if: matrix.platform == 'x64'
-        run: sed -i "s#android_default_version_code = \"1\"#android_default_version_code = \"$(date '+%y%m%d')4\"#" secondary_disk/out/android_${{ matrix.platform }}/args.gn
+#       - name: Modifying args.gn (x64)
+#         if: matrix.platform == 'x64'
+#         run: sed -i "s#android_default_version_code = \"1\"#android_default_version_code = \"$(date '+%y%m%d')4\"#" secondary_disk/out/android_${{ matrix.platform }}/args.gn
 
       - name: Displaying args.gn
         run: cat secondary_disk/out/android_${{ matrix.platform }}/args.gn
@@ -155,7 +155,7 @@ jobs:
           echo 'type = onedrive' >> $HOME/.config/rclone/rclone.conf
           echo 'token = ${{ secrets.TOKEN }}' >> $HOME/.config/rclone/rclone.conf
           echo 'drive_id = ${{ secrets.DRIVE_ID }}' >> $HOME/.config/rclone/rclone.conf
-          echo 'drive_type = ${{ secrets.DRIVE_TYPE }}' >> $HOME/.config/rclone/rclone.conf
+          echo 'drive_type = personal' >> $HOME/.config/rclone/rclone.conf
       - name: Creating cache folder on /dev/disk/azure/resource-part1 (SSD)
         run: |
           sudo mkdir -p /mnt/cache
@@ -239,7 +239,7 @@ jobs:
         run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} chrome/browser
 
       - name: Uploading binary objects to cache
-        if: ${{ github.repository_owner == 'kiwibrowser' }}
+#         if: ${{ github.repository_owner == 'kiwibrowser' }}
         run: rclone copy --fast-list --transfers=32 $HOME/cache/ sync:kiwibrowser_${{ matrix.platform }}/
 
       - name: Compiling source-code (chrome/common)
@@ -276,7 +276,7 @@ jobs:
         run: ninja -C ./secondary_disk/out/android_${{ matrix.platform }} chrome_public_apk
 
       - name: Uploading binary objects to cache
-        if: ${{ github.repository_owner == 'kiwibrowser' }}
+#         if: ${{ github.repository_owner == 'kiwibrowser' }}
         run: rclone copy --fast-list --transfers=32 $HOME/cache/ sync:kiwibrowser_${{ matrix.platform }}/
 
       - name: Generating native symbols mapping
