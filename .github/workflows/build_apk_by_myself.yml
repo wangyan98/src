@@ -41,13 +41,11 @@ jobs:
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      - name: Initializing build
-        run: echo Initializing build for platform ${{ matrix.platform }}
-
       - name: Reclaiming disk space on / by disabling swap partition
         run: |
           sudo swapoff -av
           sudo rm -f /swapfile
+          
       - name: Reclaiming disk space on / by removing .NET framework
         run: sudo rm -rf /usr/share/dotnet
 
@@ -79,37 +77,15 @@ jobs:
           repository: kiwibrowser/dependencies
           path: ./secondary_disk/.cipd 
        
-       
-      - name: Creating cache folder on /dev/disk/azure/resource-part1 (SSD)
-        run: |
-          sudo mkdir -p /mnt/cache
-          sudo chown -R runner:docker /mnt/cache
-          
-      - name: Creating symlink in $HOME/cache pointing to cache on /dev/disk/azure/resource-part1
-        run: ln -s /mnt/cache $HOME/
-
-
       - name: Linking .cipd in the proper path and copying .gclient and .gclient_entries
         run: |
           ln -s $GITHUB_WORKSPACE/./secondary_disk/.cipd ..
           cp ../.cipd/.gclient ..
           cp ../.cipd/.gclient_entries ..
+          
       - name: Installing rclone
         run: curl https://rclone.org/install.sh | sudo bash -s beta
       
-      - name: Creating rclone config
-        run: |
-          mkdir -p $HOME/.config/rclone/
-          echo '[sync]' > $HOME/.config/rclone/rclone.conf
-          echo 'client_id = ${{ secrets.CLIENT_ID }}' >> $HOME/.config/rclone/rclone.conf
-          echo 'client_secret = ${{ secrets.CLIENT_SECRET }}' >> $HOME/.config/rclone/rclone.conf
-          echo 'type = onedrive' >> $HOME/.config/rclone/rclone.conf
-          echo 'token = ${{ secrets.TOKEN }}' >> $HOME/.config/rclone/rclone.conf
-          echo 'drive_id = ${{ secrets.DRIVE_ID }}' >> $HOME/.config/rclone/rclone.conf
-          echo 'drive_type = personal' >> $HOME/.config/rclone/rclone.conf
-          
-      - name: Downloading binary objects cache to $HOME/cache
-        run: rclone copy --fast-list --transfers=32 sync:kiwibrowser_arm $HOME/cache
 
       - name: Updating APT repository
         run: sudo apt-get update
@@ -125,6 +101,7 @@ jobs:
           sudo bash install-build-deps.sh --no-chromeos-fonts
           build/linux/sysroot_scripts/install-sysroot.py --arch=i386
           build/linux/sysroot_scripts/install-sysroot.py --arch=amd64
+          
       - name: Creating output folder
         run: mkdir -p secondary_disk/out/android_${{ matrix.platform }}
 
@@ -168,10 +145,34 @@ jobs:
         run: |
           echo "::set-env name=CC::ccache clang -Qunused-arguments"
           echo "::set-env name=CXX::ccache clang++ -Qunused-arguments"
+          
       - name: Checking available disk-space
         run: df -h
 
+      - name: Creating cache folder on /dev/disk/azure/resource-part1 (SSD)
+        run: |
+          sudo mkdir -p /mnt/cache
+          sudo chown -R runner:docker /mnt/cache
+          
+      - name: Creating symlink in $HOME/cache pointing to cache on /dev/disk/azure/resource-part1
+        run: ln -s /mnt/cache $HOME/
 
+      - name: Creating rclone config
+        run: |
+          mkdir -p $HOME/.config/rclone/
+          echo '[sync]' > $HOME/.config/rclone/rclone.conf
+          echo 'client_id = ${{ secrets.CLIENT_ID }}' >> $HOME/.config/rclone/rclone.conf
+          echo 'client_secret = ${{ secrets.CLIENT_SECRET }}' >> $HOME/.config/rclone/rclone.conf
+          echo 'type = onedrive' >> $HOME/.config/rclone/rclone.conf
+          echo 'token = ${{ secrets.TOKEN }}' >> $HOME/.config/rclone/rclone.conf
+          echo 'drive_id = ${{ secrets.DRIVE_ID }}' >> $HOME/.config/rclone/rclone.conf
+          echo 'drive_type = personal' >> $HOME/.config/rclone/rclone.conf
+          
+      - name: Downloading binary objects cache to $HOME/cache
+        run: rclone copy --fast-list --transfers=32 sync:kiwibrowser_arm $HOME/cache
+      
+      - name: Checking available disk-space after downloading cache
+        run: ls $HOME/cache
 
       - name: Checking available disk-space after downloading cache
         run: df -h
@@ -191,6 +192,10 @@ jobs:
           echo "base_dir = $HOME" >> $HOME/.ccache/ccache.conf
           echo "cache_dir = $HOME/cache" >> $HOME/.ccache/ccache.conf
           echo "hash_dir = false" >> $HOME/.ccache/ccache.conf
+          
+      - name: cat ccache.conf
+        run: cat  $HOME/.ccache/ccache.conf
+          
       - name: Running gclient runhooks
         run: gclient runhooks
 
